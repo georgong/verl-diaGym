@@ -1,0 +1,7 @@
+interaction:
+  - name: "diaggym"  
+    class_name: "verl.interactions.diaggym_interaction.DiagGymInteraction"
+    config:
+      name: "DiagGym"           
+      max_turns: 8
+      model_name_or_path: "/models/DiagGym"

@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 import os
-
+import json
 from .base import BaseInteraction
 from openai import OpenAI
 
@@ -110,22 +110,24 @@ class DiagGymInteraction(BaseInteraction):
 
     def _parse_messages(self, messages: List[Dict[str, Any]]) -> Dict[str, Optional[str]]:
         """
-        Parse the current turn messages.
-
-        Expected return structure:
+        Expected return:
             {
                 "exam_name": Optional[str],
                 "diagnosis": Optional[str],
             }
-
-        - "exam_name" indicates that a new exam should be requested.
-        - "diagnosis" indicates that the system has produced a final diagnosis.
-
-        This method is intended to be implemented by downstream code.
         """
-        raise NotImplementedError(
-            "_parse_messages must be implemented to extract exam_name / diagnosis from messages."
-        )
+        last = messages[-1]["content"]
+        try:
+            data = json.loads(last)
+        except Exception:
+            data = {}
+
+        if data.get("type") == "request_exam":
+            return {"exam_name": data.get("exam_name"), "diagnosis": None}
+        elif data.get("type") == "make_diagnosis":
+            return {"exam_name": None, "diagnosis": data.get("diagnosis")}
+        else:
+            return {"exam_name": None, "diagnosis": None}
 
     def _process_exam_result(self, exam_name: str, raw_result: str) -> Tuple[str, str]:
         """
@@ -137,9 +139,7 @@ class DiagGymInteraction(BaseInteraction):
         Downstream code may override this to perform summarization,
         normalization, or conversion into a richer structure.
         """
-        raise NotImplementedError(
-            "_process_exam_result must be implemented to format exam results."
-        )
+        return exam_name, raw_result
 
     # ---------- Main interaction entrypoint ---------- #
 
